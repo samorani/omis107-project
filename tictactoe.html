@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tic-Tac-Toe</title>
+<style>
+  :root {
+    --bg: #f5f5f4; --panel: #ffffff; --text: #1c1917; --muted: #78716c;
+    --line: #d6d3d1; --x: #2563eb; --o: #dc2626; --win: #fde68a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1917; --panel: #292524; --text: #f5f5f4; --muted: #a8a29e;
+      --line: #44403c; --x: #60a5fa; --o: #f87171; --win: #78350f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { width: min(100% - 32px, 380px); text-align: center; }
+  h1 { margin: 0 0 16px; font-size: 1.8rem; }
+  .mode { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .mode button, .reset {
+    font: inherit; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  }
+  .mode button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+  .status { min-height: 1.5em; margin-bottom: 12px; font-size: 1.15rem; font-weight: 600; }
+  .board {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    aspect-ratio: 1; margin-bottom: 16px;
+  }
+  .cell {
+    font: 700 clamp(2.5rem, 15vw, 4rem)/1 system-ui, sans-serif;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+    color: var(--text); cursor: pointer; transition: background .15s;
+  }
+  .cell:hover:not(:disabled) { background: var(--line); }
+  .cell:disabled { cursor: default; }
+  .cell.X { color: var(--x); }
+  .cell.O { color: var(--o); }
+  .cell.win { background: var(--win); }
+  .scores { display: flex; justify-content: space-around; margin-bottom: 16px; color: var(--muted); }
+  .scores strong { display: block; font-size: 1.4rem; color: var(--text); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tic-Tac-Toe</h1>
+  <div class="mode">
+    <button id="mode-pvp" aria-pressed="true">2 Players</button>
+    <button id="mode-cpu" aria-pressed="false">vs Computer</button>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="board" id="board"></div>
+  <div class="scores">
+    <div>X<strong id="score-X">0</strong></div>
+    <div>Draws<strong id="score-D">0</strong></div>
+    <div>O<strong id="score-O">0</strong></div>
+  </div>
+  <button class="reset" id="reset">New game</button>
+</main>
+
+<script>
+  const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const scores = { X: 0, O: 0, D: 0 };
+  let board, turn, over, vsCpu = false;
+
+  const cells = Array.from({ length: 9 }, (_, i) => {
+    const b = document.createElement('button');
+    b.className = 'cell';
+    b.setAttribute('aria-label', `Cell ${i + 1}`);
+    b.addEventListener('click', () => play(i));
+    boardEl.appendChild(b);
+    return b;
+  });
+
+  function winner(b) {
+    for (const line of LINES) {
+      const [a, c, d] = line;
+      if (b[a] && b[a] === b[c] && b[a] === b[d]) return { player: b[a], line };
+    }
+    return b.every(Boolean) ? { player: null } : null;
+  }
+
+  // Minimax: computer (O) plays perfectly.
+  function minimax(b, player) {
+    const w = winner(b);
+    if (w) return { score: w.player === 'O' ? 10 : w.player === 'X' ? -10 : 0 };
+    let best = { score: player === 'O' ? -Infinity : Infinity };
+    for (let i = 0; i < 9; i++) {
+      if (b[i]) continue;
+      b[i] = player;
+      const { score } = minimax(b, player === 'O' ? 'X' : 'O');
+      b[i] = null;
+      const s = score - Math.sign(score); // prefer faster wins / slower losses
+      if (player === 'O' ? s > best.score : s < best.score) best = { score: s, move: i };
+    }
+    return best;
+  }
+
+  function play(i) {
+    if (over || board[i] || (vsCpu && turn === 'O')) return;
+    move(i);
+    if (vsCpu && !over) {
+      render();
+      setTimeout(() => move(minimax(board.slice(), 'O').move), 350);
+    }
+  }
+
+  function move(i) {
+    board[i] = turn;
+    const w = winner(board);
+    if (w) {
+      over = true;
+      scores[w.player || 'D']++;
+      w.line?.forEach(j => cells[j].classList.add('win'));
+    } else {
+      turn = turn === 'X' ? 'O' : 'X';
+    }
+    render(w);
+  }
+
+  function render(w) {
+    cells.forEach((c, i) => {
+      c.textContent = board[i] || '';
+      c.classList.toggle('X', board[i] === 'X');
+      c.classList.toggle('O', board[i] === 'O');
+      c.disabled = over || !!board[i];
+    });
+    for (const k in scores) document.getElementById('score-' + k).textContent = scores[k];
+    if (w) statusEl.textContent = w.player ? `${w.player} wins!` : "It's a draw.";
+    else statusEl.textContent = vsCpu && turn === 'O' ? 'Computer is thinking…' : `${turn}'s turn`;
+  }
+
+  function reset() {
+    board = Array(9).fill(null);
+    turn = 'X';
+    over = false;
+    cells.forEach(c => c.classList.remove('win'));
+    render();
+  }
+
+  function setMode(cpu) {
+    vsCpu = cpu;
+    document.getElementById('mode-pvp').setAttribute('aria-pressed', !cpu);
+    document.getElementById('mode-cpu').setAttribute('aria-pressed', cpu);
+    scores.X = scores.O = scores.D = 0;
+    reset();
+  }
+
+  document.getElementById('reset').addEventListener('click', reset);
+  document.getElementById('mode-pvp').addEventListener('click', () => setMode(false));
+  document.getElementById('mode-cpu').addEventListener('click', () => setMode(true));
+  reset();
+</script>
+</body>
+</html>
