@@ -27,7 +27,10 @@
   <h1>Connect Four</h1>
   <div id="status"></div>
   <div id="board"></div>
-  <p><button onclick="newGame()">New game</button></p>
+  <p>
+    <button onclick="newGame()">New game</button>
+    <button id="resign" onclick="resign()">Resign</button>
+  </p>
 
 <script>
   const ROWS = 6, COLS = 7;
@@ -62,11 +65,11 @@
     const line = findWin(row, col);
     if (line) {
       line.forEach(([r, c]) => cells[r][c].classList.add('win'));
+      gameOver = true;
       setStatus(`<span class="${turn}">${capitalize(turn)}</span> wins!`);
-      gameOver = true;
     } else if (board[0].every(cell => cell)) {
-      setStatus("It's a draw.");
       gameOver = true;
+      setStatus("It's a draw.");
     } else {
       turn = turn === 'red' ? 'yellow' : 'red';
       showTurn();
@@ -91,8 +94,22 @@
     return null;
   }
 
+  // The player whose turn it is gives up; the other player wins.
+  function resign() {
+    if (gameOver) return;
+    const loser = turn;
+    const winner = turn === 'red' ? 'yellow' : 'red';
+    if (!confirm(`${capitalize(loser)}, are you sure you want to resign?`)) return;
+    gameOver = true;
+    setStatus(`${capitalize(loser)} resigned. <span class="${winner}">${capitalize(winner)}</span> wins!`);
+  }
+
+  function updateResign() {
+    document.getElementById('resign').disabled = gameOver;
+  }
+
   function capitalize(s) { return s[0].toUpperCase() + s.slice(1); }
-  function setStatus(html) { statusEl.innerHTML = html; }
+  function setStatus(html) { statusEl.innerHTML = html; updateResign(); }
   function showTurn() { setStatus(`<span class="${turn}">${capitalize(turn)}</span>'s turn`); }
 
   function newGame() {
