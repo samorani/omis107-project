@@ -5,9 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tic-Tac-Toe</title>
 <style>
-  body { font-family: sans-serif; text-align: center; margin-top: 40px; }
+  :root { --bg: #ffffff; --text: #222222; --cell: #eeeeee; --x: #2563eb; --o: #dc2626; }
+  body { font-family: sans-serif; text-align: center; margin: 0; padding-top: 40px;
+         background: var(--bg); color: var(--text); min-height: 100vh; }
   #board { display: inline-grid; grid-template-columns: repeat(3, 80px); gap: 4px; }
-  #board button { width: 80px; height: 80px; font-size: 2.5rem; cursor: pointer; }
+  #board button { width: 80px; height: 80px; font-size: 2.5rem; cursor: pointer;
+                  background: var(--cell); border: 1px solid var(--text); border-radius: 6px; }
+  #board button.X { color: var(--x); }
+  #board button.O { color: var(--o); }
+  #theme { display: inline-flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 8px; }
+  #theme label { display: flex; flex-direction: column; align-items: center; font-size: 0.85rem; }
   #status { font-size: 1.3rem; margin: 16px; }
 </style>
 </head>
@@ -16,6 +23,16 @@
   <div id="status"></div>
   <div id="board"></div>
   <p><button onclick="newGame()">New game</button></p>
+
+  <h3>Colors</h3>
+  <div id="theme">
+    <label>Background <input type="color" data-var="bg"></label>
+    <label>Text <input type="color" data-var="text"></label>
+    <label>Squares <input type="color" data-var="cell"></label>
+    <label>X <input type="color" data-var="x"></label>
+    <label>O <input type="color" data-var="o"></label>
+  </div>
+  <p><button onclick="resetColors()">Reset colors</button></p>
 
 <script>
   const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
@@ -33,6 +50,7 @@
     if (gameOver || board[i]) return;
     board[i] = turn;
     boardEl.children[i].textContent = turn;
+    boardEl.children[i].className = turn;
 
     if (lines.some(([a, b, c]) => board[a] === turn && board[b] === turn && board[c] === turn)) {
       statusEl.textContent = turn + ' wins!';
@@ -50,8 +68,37 @@
     board = Array(9).fill('');
     turn = 'X';
     gameOver = false;
-    for (const cell of boardEl.children) cell.textContent = '';
+    for (const cell of boardEl.children) { cell.textContent = ''; cell.className = ''; }
     statusEl.textContent = "X's turn";
+  }
+
+  // Color theme: each picker sets a CSS variable; choices are remembered in this browser.
+  const root = document.documentElement;
+  const pickers = document.querySelectorAll('#theme input');
+  const defaults = {};
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('ttt-colors')) || {}; } catch {}
+
+  pickers.forEach(picker => {
+    const name = '--' + picker.dataset.var;
+    defaults[name] = getComputedStyle(root).getPropertyValue(name).trim();
+    if (saved[name]) root.style.setProperty(name, saved[name]);
+    picker.value = saved[name] || defaults[name];
+    picker.oninput = () => {
+      root.style.setProperty(name, picker.value);
+      saved[name] = picker.value;
+      try { localStorage.setItem('ttt-colors', JSON.stringify(saved)); } catch {}
+    };
+  });
+
+  function resetColors() {
+    saved = {};
+    try { localStorage.removeItem('ttt-colors'); } catch {}
+    pickers.forEach(picker => {
+      const name = '--' + picker.dataset.var;
+      root.style.removeProperty(name);
+      picker.value = defaults[name];
+    });
   }
 
   newGame();
