@@ -24,6 +24,8 @@
   main { width: min(100% - 32px, 380px); text-align: center; }
   h1 { margin: 0 0 16px; font-size: 1.8rem; }
   .mode { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .difficulty { margin-top: -8px; }
+  .difficulty[hidden] { display: none; }
   .mode button, .reset {
     font: inherit; padding: 8px 14px; border-radius: 8px; cursor: pointer;
     border: 1px solid var(--line); background: var(--panel); color: var(--text);
@@ -55,6 +57,11 @@
     <button id="mode-pvp" aria-pressed="true">2 Players</button>
     <button id="mode-cpu" aria-pressed="false">vs Computer</button>
   </div>
+  <div class="mode difficulty" id="difficulty" hidden>
+    <button data-level="easy" aria-pressed="false">Easy</button>
+    <button data-level="medium" aria-pressed="true">Medium</button>
+    <button data-level="immortal" aria-pressed="false">Immortal</button>
+  </div>
   <div class="status" id="status"></div>
   <div class="board" id="board"></div>
   <div class="scores">
@@ -70,7 +77,9 @@
   const boardEl = document.getElementById('board');
   const statusEl = document.getElementById('status');
   const scores = { X: 0, O: 0, D: 0 };
-  let board, turn, over, vsCpu = false;
+  // Chance the computer skips its best move for a different random one.
+  const MISTAKE_CHANCE = { easy: 0.5, medium: 0.2, immortal: 0 };
+  let board, turn, over, vsCpu = false, level = 'medium';
 
   const cells = Array.from({ length: 9 }, (_, i) => {
     const b = document.createElement('button');
@@ -105,12 +114,21 @@
     return best;
   }
 
+  function cpuMove() {
+    const best = minimax(board.slice(), 'O').move;
+    const others = board.map((v, i) => v ? null : i).filter(i => i !== null && i !== best);
+    if (others.length && Math.random() < MISTAKE_CHANCE[level]) {
+      return others[Math.floor(Math.random() * others.length)];
+    }
+    return best;
+  }
+
   function play(i) {
     if (over || board[i] || (vsCpu && turn === 'O')) return;
     move(i);
     if (vsCpu && !over) {
       render();
-      setTimeout(() => move(minimax(board.slice(), 'O').move), 350);
+      setTimeout(() => move(cpuMove()), 350);
     }
   }
 
@@ -151,6 +169,7 @@
     vsCpu = cpu;
     document.getElementById('mode-pvp').setAttribute('aria-pressed', !cpu);
     document.getElementById('mode-cpu').setAttribute('aria-pressed', cpu);
+    document.getElementById('difficulty').hidden = !cpu;
     scores.X = scores.O = scores.D = 0;
     reset();
   }
@@ -158,6 +177,12 @@
   document.getElementById('reset').addEventListener('click', reset);
   document.getElementById('mode-pvp').addEventListener('click', () => setMode(false));
   document.getElementById('mode-cpu').addEventListener('click', () => setMode(true));
+  document.querySelectorAll('#difficulty button').forEach(b => b.addEventListener('click', () => {
+    level = b.dataset.level;
+    document.querySelectorAll('#difficulty button').forEach(o => o.setAttribute('aria-pressed', o === b));
+    scores.X = scores.O = scores.D = 0;
+    reset();
+  }));
   reset();
 </script>
 </body>
