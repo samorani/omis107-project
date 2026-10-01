@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect Four</title>
+<style>
+  body { font-family: sans-serif; text-align: center; margin: 0; padding: 30px 16px; }
+  #board {
+    display: inline-grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    padding: 10px; background: #1d4ed8; border-radius: 12px;
+    width: min(100%, 460px); box-sizing: border-box;
+  }
+  .cell {
+    aspect-ratio: 1; border-radius: 50%; background: #ffffff;
+    border: none; padding: 0; cursor: pointer;
+  }
+  .cell.red { background: #dc2626; }
+  .cell.yellow { background: #facc15; }
+  .cell.win { outline: 4px solid #22c55e; outline-offset: -4px; }
+  #status { font-size: 1.3rem; margin: 16px; }
+  #status .red { color: #dc2626; }
+  #status .yellow { color: #ca8a04; }
+</style>
+</head>
+<body>
+  <h1>Connect Four</h1>
+  <div id="status"></div>
+  <div id="board"></div>
+  <p><button onclick="newGame()">New game</button></p>
+
+<script>
+  const ROWS = 6, COLS = 7;
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  let board, turn, gameOver;
+
+  // Build the grid; clicking any cell drops a piece into that cell's column.
+  const cells = [];
+  for (let r = 0; r < ROWS; r++) {
+    cells.push([]);
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement('button');
+      cell.className = 'cell';
+      cell.setAttribute('aria-label', `Column ${c + 1}`);
+      cell.onclick = () => drop(c);
+      boardEl.appendChild(cell);
+      cells[r].push(cell);
+    }
+  }
+
+  function drop(col) {
+    if (gameOver) return;
+    // Find the lowest empty row in this column.
+    let row = ROWS - 1;
+    while (row >= 0 && board[row][col]) row--;
+    if (row < 0) return; // column is full
+
+    board[row][col] = turn;
+    cells[row][col].classList.add(turn);
+
+    const line = findWin(row, col);
+    if (line) {
+      line.forEach(([r, c]) => cells[r][c].classList.add('win'));
+      setStatus(`<span class="${turn}">${capitalize(turn)}</span> wins!`);
+      gameOver = true;
+    } else if (board[0].every(cell => cell)) {
+      setStatus("It's a draw.");
+      gameOver = true;
+    } else {
+      turn = turn === 'red' ? 'yellow' : 'red';
+      showTurn();
+    }
+  }
+
+  // Check the four directions through the last piece for 4 in a row.
+  function findWin(row, col) {
+    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+    for (const [dr, dc] of directions) {
+      const line = [[row, col]];
+      for (const sign of [1, -1]) {
+        let r = row + dr * sign, c = col + dc * sign;
+        while (r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r][c] === turn) {
+          line.push([r, c]);
+          r += dr * sign;
+          c += dc * sign;
+        }
+      }
+      if (line.length >= 4) return line;
+    }
+    return null;
+  }
+
+  function capitalize(s) { return s[0].toUpperCase() + s.slice(1); }
+  function setStatus(html) { statusEl.innerHTML = html; }
+  function showTurn() { setStatus(`<span class="${turn}">${capitalize(turn)}</span>'s turn`); }
+
+  function newGame() {
+    board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    turn = 'red';
+    gameOver = false;
+    cells.flat().forEach(cell => cell.className = 'cell');
+    showTurn();
+  }
+
+  newGame();
+</script>
+</body>
+</html>
