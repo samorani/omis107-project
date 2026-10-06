@@ -18,6 +18,10 @@
   .cell.red { background: #dc2626; }
   .cell.yellow { background: #facc15; }
   .cell.win { outline: 4px solid #22c55e; outline-offset: -4px; }
+  .options { display: flex; gap: 6px; justify-content: center; margin: 8px 0; }
+  .options[hidden] { display: none; }
+  .options button { padding: 6px 12px; cursor: pointer; }
+  .options button[aria-pressed="true"] { background: #1d4ed8; color: #ffffff; }
   #status { font-size: 1.3rem; margin: 16px; }
   #status .red { color: #dc2626; }
   #status .yellow { color: #ca8a04; }
@@ -25,6 +29,15 @@
 </head>
 <body>
   <h1>Connect Four</h1>
+  <div class="options" id="mode">
+    <button data-cpu="false" aria-pressed="true">2 Players</button>
+    <button data-cpu="true" aria-pressed="false">vs Computer</button>
+  </div>
+  <div class="options" id="difficulty" hidden>
+    <button data-level="easy" aria-pressed="false">Easy</button>
+    <button data-level="medium" aria-pressed="true">Medium</button>
+    <button data-level="hard" aria-pressed="false">Hard</button>
+  </div>
   <div id="status"></div>
   <div id="board"></div>
   <p>
@@ -36,7 +49,14 @@
   const ROWS = 6, COLS = 7;
   const boardEl = document.getElementById('board');
   const statusEl = document.getElementById('status');
-  let board, turn, gameOver;
+  let board, turn, gameOver, vsCpu = false, level = 'medium', cpuTimer;
+
+  // How far ahead the computer looks, and how often it plays a random move instead.
+  const LEVELS = {
+    easy:   { depth: 2, randomChance: 0.4 },
+    medium: { depth: 4, randomChance: 0 },
+    hard:   { depth: 7, randomChance: 0 },
+  };
 
   // Build the grid; clicking any cell drops a piece into that cell's column.
   const cells = [];
@@ -52,12 +72,23 @@
     }
   }
 
+  // Human click. In vs Computer mode the human is Red and the computer is Yellow.
   function drop(col) {
-    if (gameOver) return;
+    if (vsCpu && turn === 'yellow') return;
+    const played = place(col);
+    if (played && vsCpu && !gameOver) {
+      setStatus('<span class="yellow">Computer</span> is thinking…');
+      cpuTimer = setTimeout(() => place(chooseCpuMove()), 300);
+    }
+  }
+
+  // Drops a piece for the current player. Returns false if the move isn't allowed.
+  function place(col) {
+    if (gameOver) return false;
     // Find the lowest empty row in this column.
     let row = ROWS - 1;
     while (row >= 0 && board[row][col]) row--;
-    if (row < 0) return; // column is full
+    if (row < 0) return false; // column is full
 
     board[row][col] = turn;
     cells[row][col].classList.add(turn);
@@ -74,6 +105,7 @@
       turn = turn === 'red' ? 'yellow' : 'red';
       showTurn();
     }
+    return true;
   }
 
   // Check the four directions through the last piece for 4 in a row.
@@ -95,30 +127,138 @@
   }
 
   // The player whose turn it is gives up; the other player wins.
+  // Against the computer, the human (Red) is always the one resigning.
   function resign() {
     if (gameOver) return;
-    const loser = turn;
-    const winner = turn === 'red' ? 'yellow' : 'red';
+    const loser = vsCpu ? 'red' : turn;
+    const winner = other(loser);
     if (!confirm(`${capitalize(loser)}, are you sure you want to resign?`)) return;
+    clearTimeout(cpuTimer); // cancel the computer's pending move, if any
     gameOver = true;
-    setStatus(`${capitalize(loser)} resigned. <span class="${winner}">${capitalize(winner)}</span> wins!`);
+    const winnerName = vsCpu ? 'Computer' : capitalize(winner);
+    setStatus(`${capitalize(loser)} resigned. <span class="${winner}">${winnerName}</span> wins!`);
   }
 
   function updateResign() {
     document.getElementById('resign').disabled = gameOver;
   }
 
+  // ---------- Computer player ----------
+
+  const other = p => p === 'red' ? 'yellow' : 'red';
+
+  // Open columns, center first (center moves are usually stronger, which speeds up the search).
+  function openCols(b) {
+    return [3, 2, 4, 1, 5, 0, 6].filter(c => !b[0][c]);
+  }
+
+  function lowestRow(b, col) {
+    for (let r = ROWS - 1; r >= 0; r--) if (!b[r][col]) return r;
+    return -1;
+  }
+
+  function isWinAt(b, row, col, p) {
+    for (const [dr, dc] of [[0, 1], [1, 0], [1, 1], [1, -1]]) {
+      let count = 1;
+      for (const sign of [1, -1]) {
+        let r = row + dr * sign, c = col + dc * sign;
+        while (r >= 0 && r < ROWS && c >= 0 && c < COLS && b[r][c] === p) {
+          count++;
+          r += dr * sign;
+          c += dc * sign;
+        }
+      }
+      if (count >= 4) return true;
+    }
+    return false;
+  }
+
+  // Scores a position for player p by looking at every group of 4 cells.
+  function evaluate(b, p) {
+    const opp = other(p);
+    let score = 0;
+    for (let r = 0; r < ROWS; r++) {
+      if (b[r][3] === p) score += 3;
+      else if (b[r][3] === opp) score -= 3;
+    }
+    for (const [dr, dc] of [[0, 1], [1, 0], [1, 1], [1, -1]]) {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const endR = r + 3 * dr, endC = c + 3 * dc;
+          if (endR < 0 || endR >= ROWS || endC < 0 || endC >= COLS) continue;
+          let mine = 0, theirs = 0;
+          for (let i = 0; i < 4; i++) {
+            const v = b[r + i * dr][c + i * dc];
+            if (v === p) mine++;
+            else if (v === opp) theirs++;
+          }
+          if (theirs === 0) score += mine === 3 ? 5 : mine === 2 ? 2 : 0;
+          if (mine === 0) score -= theirs === 3 ? 5 : theirs === 2 ? 2 : 0;
+        }
+      }
+    }
+    return score;
+  }
+
+  // Minimax (negamax form) with alpha-beta pruning. Scores are from p's point of view.
+  function search(b, depth, alpha, beta, p) {
+    const cols = openCols(b);
+    if (!cols.length) return { score: 0 }; // draw
+    let best = { score: -Infinity, col: cols[0] };
+    for (const c of cols) {
+      const r = lowestRow(b, c);
+      b[r][c] = p;
+      let score;
+      if (isWinAt(b, r, c, p)) score = 100000 + depth; // prefer faster wins
+      else if (depth === 1) score = evaluate(b, p);
+      else score = -search(b, depth - 1, -beta, -alpha, other(p)).score;
+      b[r][c] = null;
+      if (score > best.score) best = { score, col: c };
+      alpha = Math.max(alpha, score);
+      if (alpha >= beta) break;
+    }
+    return best;
+  }
+
+  function chooseCpuMove() {
+    const { depth, randomChance } = LEVELS[level];
+    const cols = openCols(board);
+    if (Math.random() < randomChance) return cols[Math.floor(Math.random() * cols.length)];
+    return search(board.map(row => row.slice()), depth, -Infinity, Infinity, turn).col;
+  }
+
+  // ---------- Helpers & setup ----------
+
   function capitalize(s) { return s[0].toUpperCase() + s.slice(1); }
   function setStatus(html) { statusEl.innerHTML = html; updateResign(); }
   function showTurn() { setStatus(`<span class="${turn}">${capitalize(turn)}</span>'s turn`); }
 
   function newGame() {
+    clearTimeout(cpuTimer);
     board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
     turn = 'red';
     gameOver = false;
     cells.flat().forEach(cell => cell.className = 'cell');
     showTurn();
   }
+
+  function selectButton(group, btn) {
+    group.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === btn));
+  }
+
+  const modeEl = document.getElementById('mode');
+  const difficultyEl = document.getElementById('difficulty');
+  modeEl.querySelectorAll('button').forEach(btn => btn.onclick = () => {
+    vsCpu = btn.dataset.cpu === 'true';
+    selectButton(modeEl, btn);
+    difficultyEl.hidden = !vsCpu;
+    newGame();
+  });
+  difficultyEl.querySelectorAll('button').forEach(btn => btn.onclick = () => {
+    level = btn.dataset.level;
+    selectButton(difficultyEl, btn);
+    newGame();
+  });
 
   newGame();
 </script>
