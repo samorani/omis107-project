@@ -2,3 +2,4 @@ Once upon a time, there was a student learning Linux,
 Typing commands by night, then gaming on Roblox.
 Each bug that appeared just sharpened their wit,
 Till skill replaced doubt—now nothing feels too slick.
+VS Code line
