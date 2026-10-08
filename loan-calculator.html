@@ -44,7 +44,13 @@
 <body>
   <h1>Loan Calculator</h1>
   <form id="form">
-    <label for="amount">Loan amount ($)</label>
+    <label for="currency">Currency</label>
+    <select id="currency">
+      <option value="USD">US dollars ($)</option>
+      <option value="EUR">Euros (€)</option>
+    </select>
+
+    <label for="amount">Loan amount (<span class="symbol">$</span>)</label>
     <input id="amount" type="number" min="0" step="any" value="25000" required>
 
     <label for="rate">Interest rate (% per year)</label>
@@ -59,7 +65,7 @@
       </select>
     </div>
 
-    <label for="extra">Extra monthly payment ($)</label>
+    <label for="extra">Extra monthly payment (<span class="symbol">$</span>)</label>
     <input id="extra" type="number" min="0" step="any" value="0">
 
     <button type="submit">Calculate</button>
@@ -89,7 +95,8 @@
 
 <script>
   const $ = id => document.getElementById(id);
-  const money = n => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  const SYMBOLS = { USD: '$', EUR: '€' };
+  const money = n => n.toLocaleString('en-US', { style: 'currency', currency: $('currency').value });
 
   // Standard fixed-rate payment: P * r / (1 - (1 + r)^-n), where r is the monthly rate.
   // With a 0% rate, the loan is just split evenly across the months.
@@ -170,7 +177,14 @@
   }
 
   $('form').onsubmit = e => { e.preventDefault(); calculate(); };
-  calculate();
+
+  // Switching currency only changes the symbol shown; amounts are not converted.
+  function updateCurrency() {
+    document.querySelectorAll('.symbol').forEach(el => el.textContent = SYMBOLS[$('currency').value]);
+    calculate();
+  }
+  $('currency').onchange = updateCurrency;
+  updateCurrency(); // the browser may restore the last choice on reload
 </script>
 </body>
 </html>
