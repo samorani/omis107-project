@@ -37,6 +37,7 @@
   table { border-collapse: collapse; width: 100%; font-size: .9rem; }
   th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #eee; }
   th { position: sticky; top: 0; background: #f3f3f3; }
+  tfoot td { position: sticky; bottom: 0; background: #f3f3f3; font-weight: bold; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -80,8 +81,9 @@
     <h2>Amortization schedule</h2>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead>
+        <thead><tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Total interest</th><th>Balance</th></tr></thead>
         <tbody id="schedule"></tbody>
+        <tfoot id="totals"></tfoot>
       </table>
     </div>
   </div>
@@ -157,10 +159,15 @@
       $('savings').textContent = '';
     }
 
-    $('schedule').innerHTML = rows.map(r =>
-      `<tr><td>${r.month}</td><td>${money(r.payment)}</td><td>${money(r.principal)}</td>` +
-      `<td>${money(r.interest)}</td><td>${money(Math.max(r.balance, 0))}</td></tr>`
-    ).join('');
+    // Running total of interest paid so far, shown alongside each month.
+    let interestSoFar = 0;
+    $('schedule').innerHTML = rows.map(r => {
+      interestSoFar += r.interest;
+      return `<tr><td>${r.month}</td><td>${money(r.payment)}</td><td>${money(r.principal)}</td>` +
+        `<td>${money(r.interest)}</td><td>${money(interestSoFar)}</td><td>${money(Math.max(r.balance, 0))}</td></tr>`;
+    }).join('');
+    $('totals').innerHTML = `<tr><td>Total</td><td>${money(sum(rows, 'payment'))}</td><td>${money(sum(rows, 'principal'))}</td>` +
+      `<td>${money(totalInterest)}</td><td></td><td></td></tr>`;
     $('results').hidden = false;
   }
 
