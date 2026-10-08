@@ -70,7 +70,6 @@
   <div id="results" hidden>
     <div class="summary">
       <div class="card"><div class="label">Monthly payment</div><div class="value" id="payment"></div></div>
-      <div class="card"><div class="label">Total interest</div><div class="value" id="interest"></div></div>
       <div class="card"><div class="label">Total paid</div><div class="value" id="total"></div></div>
       <div class="card"><div class="label">Paid off in</div><div class="value" id="months"></div></div>
     </div>
@@ -142,7 +141,6 @@
     const totalInterest = sum(rows, 'interest');
 
     $('payment').textContent = money(payment + extra);
-    $('interest').textContent = money(totalInterest);
     $('total').textContent = money(principal + totalInterest);
     $('months').textContent = formatMonths(rows.length);
 
