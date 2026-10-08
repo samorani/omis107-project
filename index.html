@@ -9,15 +9,15 @@
   #board {
     display: inline-grid; grid-template-columns: repeat(8, 1fr);
     width: min(100%, 480px); box-sizing: border-box;
-    border: 6px solid #5b3a1e; border-radius: 6px;
+    border: 6px solid #7a5c00; border-radius: 6px;
   }
   .sq {
     aspect-ratio: 1; border: none; padding: 0; cursor: pointer; position: relative;
     display: flex; align-items: center; justify-content: center;
   }
-  .sq.light { background-color: #f0d9b5; }
-  .sq.dark { background-color: #b58863; }
-  .sq.last { background-image: linear-gradient(rgba(255, 220, 0, .4), rgba(255, 220, 0, .4)); }
+  .sq.light { background-color: #fff4b8; }
+  .sq.dark { background-color: #e0b62c; }
+  .sq.last { background-image: linear-gradient(rgba(59, 130, 246, .35), rgba(59, 130, 246, .35)); }
   .sq.selected { background-image: linear-gradient(rgba(34, 197, 94, .55), rgba(34, 197, 94, .55)); }
   .sq.check { background-image: radial-gradient(#ef4444 10%, transparent 75%); }
   .sq.target::after {
@@ -37,12 +37,12 @@
   .coord { position: absolute; font-size: 11px; font-weight: bold; pointer-events: none; }
   .coord.rank { top: 2px; left: 3px; }
   .coord.file { bottom: 1px; right: 3px; }
-  .light .coord { color: #b58863; }
-  .dark .coord { color: #f0d9b5; }
+  .light .coord { color: #e0b62c; }
+  .dark .coord { color: #fff4b8; }
   .options { display: flex; gap: 6px; justify-content: center; margin: 8px 0; }
   .options[hidden] { display: none; }
   .options button { padding: 6px 12px; cursor: pointer; }
-  .options button[aria-pressed="true"] { background: #5b3a1e; color: #ffffff; }
+  .options button[aria-pressed="true"] { background: #7a5c00; color: #ffffff; }
   #promo button { font-size: 2rem; padding: 2px 10px; }
   #status { font-size: 1.3rem; margin: 16px; }
 </style>
