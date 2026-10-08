@@ -3,522 +3,176 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chess</title>
+<title>Loan Calculator</title>
 <style>
   body { font-family: sans-serif; text-align: center; margin: 0; padding: 30px 16px; }
-  #board {
-    display: inline-grid; grid-template-columns: repeat(8, 1fr);
-    width: min(100%, 480px); box-sizing: border-box;
-    border: 6px solid #5b3a1e; border-radius: 6px;
+  form {
+    display: inline-grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center;
+    width: min(100%, 420px); box-sizing: border-box; text-align: left;
+    padding: 20px; border: 1px solid #ccc; border-radius: 8px;
   }
-  .sq {
-    aspect-ratio: 1; border: none; padding: 0; cursor: pointer; position: relative;
-    display: flex; align-items: center; justify-content: center;
+  form label { font-weight: bold; }
+  form input, form select { padding: 6px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+  .term { display: flex; gap: 6px; }
+  .term select { width: auto; }
+  form button { grid-column: 1 / -1; padding: 8px; font-size: 1rem; cursor: pointer; }
+  #error { color: #b91c1c; min-height: 1.2em; margin: 10px; }
+  .summary { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 10px 0 20px; }
+  .card { border: 1px solid #ccc; border-radius: 8px; padding: 12px 18px; min-width: 140px; }
+  .card .label { font-size: .85rem; color: #555; }
+  .card .value { font-size: 1.4rem; font-weight: bold; margin-top: 4px; }
+  #breakdown {
+    display: flex; height: 18px; width: min(100%, 420px); margin: 0 auto 6px;
+    border-radius: 9px; overflow: hidden; background: #eee;
   }
-  .sq.light { background-color: #f0d9b5; }
-  .sq.dark { background-color: #b58863; }
-  .sq.last { background-image: linear-gradient(rgba(255, 220, 0, .4), rgba(255, 220, 0, .4)); }
-  .sq.selected { background-image: linear-gradient(rgba(34, 197, 94, .55), rgba(34, 197, 94, .55)); }
-  .sq.check { background-image: radial-gradient(#ef4444 10%, transparent 75%); }
-  .sq.target::after {
-    content: ''; position: absolute; width: 28%; height: 28%;
-    border-radius: 50%; background: rgba(0, 0, 0, .25);
+  #breakdown .principal { background: #2563eb; }
+  #breakdown .interest { background: #f59e0b; }
+  .legend { font-size: .85rem; margin-bottom: 20px; }
+  .legend span::before {
+    content: ''; display: inline-block; width: 10px; height: 10px; margin: 0 4px 0 12px; border-radius: 2px;
   }
-  .sq.capture::after {
-    content: ''; position: absolute; inset: 4%;
-    border-radius: 50%; border: 4px solid rgba(0, 0, 0, .25);
-  }
-  .piece {
-    font-family: "Segoe UI Symbol", "DejaVu Sans", "Noto Sans Symbols 2", sans-serif;
-    font-size: clamp(24px, 8.5vw, 48px); line-height: 1; pointer-events: none;
-  }
-  .piece.w { color: #ffffff; text-shadow: 0 0 2px #000, 0 0 1px #000, 0 0 1px #000; }
-  .piece.b { color: #111111; }
-  .coord { position: absolute; font-size: 11px; font-weight: bold; pointer-events: none; }
-  .coord.rank { top: 2px; left: 3px; }
-  .coord.file { bottom: 1px; right: 3px; }
-  .light .coord { color: #b58863; }
-  .dark .coord { color: #f0d9b5; }
-  .options { display: flex; gap: 6px; justify-content: center; margin: 8px 0; }
-  .options[hidden] { display: none; }
-  .options button { padding: 6px 12px; cursor: pointer; }
-  .options button[aria-pressed="true"] { background: #5b3a1e; color: #ffffff; }
-  #promo button { font-size: 2rem; padding: 2px 10px; }
-  #status { font-size: 1.3rem; margin: 16px; }
+  .legend .principal::before { background: #2563eb; }
+  .legend .interest::before { background: #f59e0b; }
+  .table-wrap { max-width: 640px; margin: 0 auto; max-height: 400px; overflow: auto; border: 1px solid #ccc; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #eee; }
+  th { position: sticky; top: 0; background: #f3f3f3; }
+  tfoot td { position: sticky; bottom: 0; background: #f3f3f3; font-weight: bold; }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-  <h1>Chess</h1>
-  <div class="options" id="mode">
-    <button data-cpu="false" aria-pressed="true">2 Players</button>
-    <button data-cpu="true" aria-pressed="false">vs Computer</button>
+  <h1>Loan Calculator</h1>
+  <form id="form">
+    <label for="amount">Loan amount ($)</label>
+    <input id="amount" type="number" min="0" step="any" value="25000" required>
+
+    <label for="rate">Interest rate (% per year)</label>
+    <input id="rate" type="number" min="0" step="any" value="6.5" required>
+
+    <label for="term">Loan term</label>
+    <div class="term">
+      <input id="term" type="number" min="1" step="1" value="5" required>
+      <select id="termUnit">
+        <option value="12">years</option>
+        <option value="1">months</option>
+      </select>
+    </div>
+
+    <label for="extra">Extra monthly payment ($)</label>
+    <input id="extra" type="number" min="0" step="any" value="0">
+
+    <button type="submit">Calculate</button>
+  </form>
+
+  <div id="error"></div>
+
+  <div id="results" hidden>
+    <div class="summary">
+      <div class="card"><div class="label">Monthly payment</div><div class="value" id="payment"></div></div>
+      <div class="card"><div class="label">Total interest</div><div class="value" id="interest"></div></div>
+      <div class="card"><div class="label">Total paid</div><div class="value" id="total"></div></div>
+      <div class="card"><div class="label">Paid off in</div><div class="value" id="months"></div></div>
+    </div>
+    <div id="breakdown"><div class="principal"></div><div class="interest"></div></div>
+    <div class="legend"><span class="principal">Principal</span><span class="interest">Interest</span></div>
+    <p id="savings"></p>
+
+    <h2>Amortization schedule</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Total interest</th><th>Balance</th></tr></thead>
+        <tbody id="schedule"></tbody>
+        <tfoot id="totals"></tfoot>
+      </table>
+    </div>
   </div>
-  <div class="options" id="difficulty" hidden>
-    <button data-level="easy" aria-pressed="false">Easy</button>
-    <button data-level="medium" aria-pressed="true">Medium</button>
-    <button data-level="hard" aria-pressed="false">Hard</button>
-  </div>
-  <div id="status"></div>
-  <div class="options" id="promo" hidden></div>
-  <div id="board"></div>
-  <p>
-    <button onclick="newGame()">New game</button>
-    <button id="resign" onclick="resign()">Resign</button>
-  </p>
 
 <script>
-  // Squares are numbered 0..63: 0 is a8 (top-left), 63 is h1 (bottom-right).
-  // Pieces are strings like 'wP' (white pawn) or 'bK' (black king); empty squares are null.
-  const FILES = 'abcdefgh';
-  const GLYPHS = { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' };
-  const NAMES = { w: 'White', b: 'Black' };
-  const boardEl = document.getElementById('board');
-  const statusEl = document.getElementById('status');
-  const promoEl = document.getElementById('promo');
-  let state, legal, selected, lastMove, gameOver, positions;
-  let vsCpu = false, level = 'medium', cpuTimer;
+  const $ = id => document.getElementById(id);
+  const money = n => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-  // How far ahead the computer looks, whether it follows capture sequences to the end,
-  // and how often it plays a random move instead.
-  const LEVELS = {
-    easy:   { depth: 1, quiesce: false, randomChance: 0.3 },
-    medium: { depth: 2, quiesce: true,  randomChance: 0 },
-    hard:   { depth: 4, quiesce: true,  randomChance: 0 },
-  };
-
-  // Build the board.
-  const cells = [];
-  for (let sq = 0; sq < 64; sq++) {
-    const cell = document.createElement('button');
-    cell.onclick = () => clickSquare(sq);
-    boardEl.appendChild(cell);
-    cells.push(cell);
+  // Standard fixed-rate payment: P * r / (1 - (1 + r)^-n), where r is the monthly rate.
+  // With a 0% rate, the loan is just split evenly across the months.
+  function monthlyPayment(principal, monthlyRate, months) {
+    if (monthlyRate === 0) return principal / months;
+    return principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months));
   }
 
-  // ---------- Rules ----------
-
-  const other = color => color === 'w' ? 'b' : 'w';
-  const inBounds = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
-  const squareName = sq => FILES[sq & 7] + (8 - (sq >> 3));
-
-  const KNIGHT_JUMPS = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-  const KING_STEPS = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
-  const ROOK_DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-  const BISHOP_DIRS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
-  const SLIDES = { B: BISHOP_DIRS, R: ROOK_DIRS, Q: [...ROOK_DIRS, ...BISHOP_DIRS] };
-
-  function startPosition() {
-    const back = 'RNBQKBNR';
-    const b = Array(64).fill(null);
-    for (let c = 0; c < 8; c++) {
-      b[c] = 'b' + back[c];
-      b[8 + c] = 'bP';
-      b[48 + c] = 'wP';
-      b[56 + c] = 'w' + back[c];
+  // Month-by-month rows. Each payment covers that month's interest first; the rest reduces the balance.
+  // Any extra payment goes straight to the balance, so the loan may finish early.
+  function amortize(principal, monthlyRate, payment, extra) {
+    const rows = [];
+    let balance = principal;
+    while (balance > 0.005) {
+      const interest = balance * monthlyRate;
+      const principalPaid = Math.min(payment + extra - interest, balance);
+      balance -= principalPaid;
+      rows.push({ month: rows.length + 1, payment: principalPaid + interest, principal: principalPaid, interest, balance });
     }
-    // castle: remaining castling rights (K/Q = white king/queen side, k/q = black).
-    // ep: square a pawn can capture onto en passant, or -1. half: moves since a capture or pawn move.
-    return { b, turn: 'w', castle: 'KQkq', ep: -1, half: 0 };
+    return rows;
   }
 
-  // Is square sq attacked by any piece of color `by`?
-  function isAttacked(b, sq, by) {
-    const r = sq >> 3, c = sq & 7;
-    const pawnRow = by === 'w' ? r + 1 : r - 1; // white pawns attack upward, so they sit below
-    for (const dc of [-1, 1]) {
-      if (inBounds(pawnRow, c + dc) && b[pawnRow * 8 + c + dc] === by + 'P') return true;
-    }
-    for (const [jumps, type] of [[KNIGHT_JUMPS, 'N'], [KING_STEPS, 'K']]) {
-      for (const [dr, dc] of jumps) {
-        if (inBounds(r + dr, c + dc) && b[(r + dr) * 8 + c + dc] === by + type) return true;
-      }
-    }
-    for (const [dirs, types] of [[ROOK_DIRS, 'RQ'], [BISHOP_DIRS, 'BQ']]) {
-      for (const [dr, dc] of dirs) {
-        let rr = r + dr, cc = c + dc;
-        while (inBounds(rr, cc)) {
-          const p = b[rr * 8 + cc];
-          if (p) {
-            if (p[0] === by && types.includes(p[1])) return true;
-            break;
-          }
-          rr += dr;
-          cc += dc;
-        }
-      }
-    }
-    return false;
+  const sum = (rows, key) => rows.reduce((total, row) => total + row[key], 0);
+
+  function formatMonths(n) {
+    const years = Math.floor(n / 12), months = n % 12;
+    const parts = [];
+    if (years) parts.push(`${years} yr`);
+    if (months) parts.push(`${months} mo`);
+    return parts.join(' ');
   }
 
-  function inCheck(s) {
-    return isAttacked(s.b, s.b.indexOf(s.turn + 'K'), other(s.turn));
-  }
+  function calculate() {
+    const principal = parseFloat($('amount').value);
+    const annualRate = parseFloat($('rate').value);
+    const months = Math.round(parseFloat($('term').value) * Number($('termUnit').value));
+    const extra = parseFloat($('extra').value) || 0;
 
-  // All moves that follow the piece-movement rules, ignoring whether they leave the king in check.
-  function pseudoMoves(s) {
-    const { b, turn } = s, opp = other(turn), moves = [];
-    const add = (from, to, extra) => moves.push({ from, to, piece: b[from], captured: b[to], ...extra });
-
-    for (let sq = 0; sq < 64; sq++) {
-      const p = b[sq];
-      if (!p || p[0] !== turn) continue;
-      const r = sq >> 3, c = sq & 7, type = p[1];
-
-      if (type === 'P') {
-        const dir = turn === 'w' ? -1 : 1, startRow = turn === 'w' ? 6 : 1, lastRow = turn === 'w' ? 0 : 7;
-        const addPawn = to => {
-          if ((to >> 3) === lastRow) for (const promo of 'QRBN') add(sq, to, { promo });
-          else add(sq, to);
-        };
-        const one = sq + dir * 8;
-        if (!b[one]) {
-          addPawn(one);
-          if (r === startRow && !b[one + dir * 8]) add(sq, one + dir * 8, { double: true });
-        }
-        for (const dc of [-1, 1]) {
-          if (!inBounds(r + dir, c + dc)) continue;
-          const to = (r + dir) * 8 + c + dc;
-          if (b[to] && b[to][0] === opp) addPawn(to);
-          else if (to === s.ep) add(sq, to, { enPassant: true, captured: opp + 'P' });
-        }
-      } else if (type === 'N' || type === 'K') {
-        for (const [dr, dc] of type === 'N' ? KNIGHT_JUMPS : KING_STEPS) {
-          if (!inBounds(r + dr, c + dc)) continue;
-          const to = (r + dr) * 8 + c + dc;
-          if (!b[to] || b[to][0] === opp) add(sq, to);
-        }
-      } else {
-        for (const [dr, dc] of SLIDES[type]) {
-          let rr = r + dr, cc = c + dc;
-          while (inBounds(rr, cc)) {
-            const to = rr * 8 + cc;
-            if (b[to]) {
-              if (b[to][0] === opp) add(sq, to);
-              break;
-            }
-            add(sq, to);
-            rr += dr;
-            cc += dc;
-          }
-        }
-      }
+    $('error').textContent = '';
+    if (!(principal > 0) || !(annualRate >= 0) || !(months >= 1) || extra < 0) {
+      $('error').textContent = 'Please enter a positive loan amount and term, and a rate and extra payment of 0 or more.';
+      $('results').hidden = true;
+      return;
     }
 
-    // Castling: rights still available, squares between are empty,
-    // and the king isn't in check or passing through an attacked square.
-    const home = turn === 'w' ? 56 : 0, king = home + 4;
-    const [kingSide, queenSide] = turn === 'w' ? ['K', 'Q'] : ['k', 'q'];
-    if (b[king] === turn + 'K' && !isAttacked(b, king, opp)) {
-      if (s.castle.includes(kingSide) && !b[home + 5] && !b[home + 6] &&
-          !isAttacked(b, home + 5, opp) && !isAttacked(b, home + 6, opp)) {
-        add(king, home + 6, { castle: 'K' });
-      }
-      if (s.castle.includes(queenSide) && !b[home + 3] && !b[home + 2] && !b[home + 1] &&
-          !isAttacked(b, home + 3, opp) && !isAttacked(b, home + 2, opp)) {
-        add(king, home + 2, { castle: 'Q' });
-      }
-    }
-    return moves;
-  }
+    const monthlyRate = annualRate / 100 / 12;
+    const payment = monthlyPayment(principal, monthlyRate, months);
+    const rows = amortize(principal, monthlyRate, payment, extra);
+    const totalInterest = sum(rows, 'interest');
 
-  // Returns the position after move m (s itself is not changed).
-  function makeMove(s, m) {
-    const b = s.b.slice();
-    b[m.to] = m.promo ? m.piece[0] + m.promo : m.piece;
-    b[m.from] = null;
-    if (m.enPassant) b[m.to + (s.turn === 'w' ? 8 : -8)] = null;
-    if (m.castle) {
-      const home = m.from & 56;
-      if (m.castle === 'K') { b[home + 5] = b[home + 7]; b[home + 7] = null; }
-      else { b[home + 3] = b[home]; b[home] = null; }
-    }
-    // Moving a king or rook, or capturing a rook on its starting square, loses castling rights.
-    const lostRights = { 60: 'KQ', 63: 'K', 56: 'Q', 4: 'kq', 7: 'k', 0: 'q' };
-    let castle = s.castle;
-    for (const sq of [m.from, m.to]) {
-      for (const right of lostRights[sq] || '') castle = castle.replace(right, '');
-    }
-    return {
-      b, turn: other(s.turn), castle,
-      ep: m.double ? (m.from + m.to) / 2 : -1,
-      half: m.piece[1] === 'P' || m.captured ? 0 : s.half + 1,
-    };
-  }
+    $('payment').textContent = money(payment + extra);
+    $('interest').textContent = money(totalInterest);
+    $('total').textContent = money(principal + totalInterest);
+    $('months').textContent = formatMonths(rows.length);
 
-  // Moves that don't leave your own king in check. Each move remembers its resulting position in m.next.
-  function legalMoves(s, capturesOnly = false) {
-    const result = [];
-    for (const m of pseudoMoves(s)) {
-      if (capturesOnly && !m.captured) continue;
-      m.next = makeMove(s, m);
-      if (!isAttacked(m.next.b, m.next.b.indexOf(s.turn + 'K'), m.next.turn)) result.push(m);
-    }
-    return result;
-  }
+    const principalShare = principal / (principal + totalInterest) * 100;
+    $('breakdown').querySelector('.principal').style.width = principalShare + '%';
+    $('breakdown').querySelector('.interest').style.width = (100 - principalShare) + '%';
 
-  // Neither side has enough pieces left to checkmate (K vs K, or K + one bishop/knight vs K).
-  function insufficientMaterial(b) {
-    const rest = b.filter(p => p && p[1] !== 'K');
-    return rest.length === 0 || (rest.length === 1 && 'BN'.includes(rest[0][1]));
-  }
-
-  const positionKey = s => s.b.map(p => p || '--').join('') + s.turn + s.castle + s.ep;
-
-  // ---------- Computer player ----------
-
-  const VALUES = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 0 };
-
-  // Bonus for standing on each square, from White's point of view (row 0 = rank 8).
-  const PST = {
-    P: [  0,  0,  0,  0,  0,  0,  0,  0,
-         50, 50, 50, 50, 50, 50, 50, 50,
-         10, 10, 20, 30, 30, 20, 10, 10,
-          5,  5, 10, 25, 25, 10,  5,  5,
-          0,  0,  0, 20, 20,  0,  0,  0,
-          5, -5,-10,  0,  0,-10, -5,  5,
-          5, 10, 10,-20,-20, 10, 10,  5,
-          0,  0,  0,  0,  0,  0,  0,  0],
-    N: [-50,-40,-30,-30,-30,-30,-40,-50,
-        -40,-20,  0,  0,  0,  0,-20,-40,
-        -30,  0, 10, 15, 15, 10,  0,-30,
-        -30,  5, 15, 20, 20, 15,  5,-30,
-        -30,  0, 15, 20, 20, 15,  0,-30,
-        -30,  5, 10, 15, 15, 10,  5,-30,
-        -40,-20,  0,  5,  5,  0,-20,-40,
-        -50,-40,-30,-30,-30,-30,-40,-50],
-    B: [-20,-10,-10,-10,-10,-10,-10,-20,
-        -10,  0,  0,  0,  0,  0,  0,-10,
-        -10,  0,  5, 10, 10,  5,  0,-10,
-        -10,  5,  5, 10, 10,  5,  5,-10,
-        -10,  0, 10, 10, 10, 10,  0,-10,
-        -10, 10, 10, 10, 10, 10, 10,-10,
-        -10,  5,  0,  0,  0,  0,  5,-10,
-        -20,-10,-10,-10,-10,-10,-10,-20],
-    R: [  0,  0,  0,  0,  0,  0,  0,  0,
-          5, 10, 10, 10, 10, 10, 10,  5,
-         -5,  0,  0,  0,  0,  0,  0, -5,
-         -5,  0,  0,  0,  0,  0,  0, -5,
-         -5,  0,  0,  0,  0,  0,  0, -5,
-         -5,  0,  0,  0,  0,  0,  0, -5,
-         -5,  0,  0,  0,  0,  0,  0, -5,
-          0,  0,  0,  5,  5,  0,  0,  0],
-    Q: [-20,-10,-10, -5, -5,-10,-10,-20,
-        -10,  0,  0,  0,  0,  0,  0,-10,
-        -10,  0,  5,  5,  5,  5,  0,-10,
-         -5,  0,  5,  5,  5,  5,  0, -5,
-          0,  0,  5,  5,  5,  5,  0, -5,
-        -10,  5,  5,  5,  5,  5,  0,-10,
-        -10,  0,  5,  0,  0,  0,  0,-10,
-        -20,-10,-10, -5, -5,-10,-10,-20],
-    K: [-30,-40,-40,-50,-50,-40,-40,-30,
-        -30,-40,-40,-50,-50,-40,-40,-30,
-        -30,-40,-40,-50,-50,-40,-40,-30,
-        -30,-40,-40,-50,-50,-40,-40,-30,
-        -20,-30,-30,-40,-40,-30,-30,-20,
-        -10,-20,-20,-20,-20,-20,-20,-10,
-         20, 20,  0,  0,  0,  0, 20, 20,
-         20, 30, 10,  0,  0, 10, 30, 20],
-  };
-
-  // Material plus square bonuses, from the point of view of the side to move.
-  function evaluate(s) {
-    let score = 0;
-    for (let sq = 0; sq < 64; sq++) {
-      const p = s.b[sq];
-      if (!p) continue;
-      const value = VALUES[p[1]] + PST[p[1]][p[0] === 'w' ? sq : sq ^ 56]; // sq ^ 56 flips the board for Black
-      score += p[0] === 'w' ? value : -value;
-    }
-    return s.turn === 'w' ? score : -score;
-  }
-
-  // Try captures first, taking the most valuable piece with the least valuable attacker.
-  // Good moves first make alpha-beta pruning cut far more of the search.
-  function orderMoves(moves) {
-    const priority = m => (m.captured ? 10 * VALUES[m.captured[1]] - VALUES[m.piece[1]] + 1000 : 0) +
-                          (m.promo ? VALUES[m.promo] : 0);
-    return moves.sort((a, b) => priority(b) - priority(a));
-  }
-
-  // Keep playing out captures so the computer doesn't stop counting halfway through a trade.
-  function quiesce(s, alpha, beta) {
-    const standPat = evaluate(s);
-    if (standPat >= beta) return standPat;
-    alpha = Math.max(alpha, standPat);
-    for (const m of orderMoves(legalMoves(s, true))) {
-      const score = -quiesce(m.next, -beta, -alpha);
-      if (score >= beta) return score;
-      alpha = Math.max(alpha, score);
-    }
-    return alpha;
-  }
-
-  const MATE = 100000;
-
-  // Minimax (negamax form) with alpha-beta pruning. Scores are from the side to move's point of view.
-  function search(s, depth, alpha, beta, ply) {
-    const moves = legalMoves(s);
-    if (!moves.length) return inCheck(s) ? -MATE + ply : 0; // checkmate (sooner is worse) or stalemate
-    if (s.half >= 100) return 0;
-    if (depth === 0) return LEVELS[level].quiesce ? quiesce(s, alpha, beta) : evaluate(s);
-    for (const m of orderMoves(moves)) {
-      const score = -search(m.next, depth - 1, -beta, -alpha, ply + 1);
-      if (score >= beta) return score;
-      alpha = Math.max(alpha, score);
-    }
-    return alpha;
-  }
-
-  function chooseCpuMove() {
-    const { depth, randomChance } = LEVELS[level];
-    const moves = legal.slice();
-    if (Math.random() < randomChance) return moves[Math.floor(Math.random() * moves.length)];
-    // Shuffle first so equally good moves aren't always played in the same order.
-    for (let i = moves.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [moves[i], moves[j]] = [moves[j], moves[i]];
-    }
-    let best = moves[0], bestScore = -Infinity;
-    for (const m of orderMoves(moves)) {
-      const score = -search(m.next, depth - 1, -Infinity, -bestScore, 1);
-      if (score > bestScore) { bestScore = score; best = m; }
-    }
-    return best;
-  }
-
-  // ---------- Playing the game ----------
-
-  // Human click: select one of your pieces, then click a highlighted square to move it.
-  // In vs Computer mode the human is White and the computer is Black.
-  function clickSquare(sq) {
-    if (gameOver || !promoEl.hidden || (vsCpu && state.turn === 'b')) return;
-    if (selected !== null) {
-      const choices = legal.filter(m => m.from === selected && m.to === sq);
-      if (choices.length > 1) return askPromotion(choices);
-      if (choices.length === 1) return playMove(choices[0]);
-    }
-    const ownPiece = state.b[sq] && state.b[sq][0] === state.turn;
-    selected = ownPiece && sq !== selected ? sq : null;
-    render();
-  }
-
-  function askPromotion(choices) {
-    promoEl.innerHTML = '';
-    for (const m of choices) {
-      const btn = document.createElement('button');
-      btn.innerHTML = `<span class="piece ${state.turn}">${GLYPHS[m.promo]}&#xFE0E;</span>`;
-      btn.onclick = () => { promoEl.hidden = true; playMove(m); };
-      promoEl.appendChild(btn);
-    }
-    promoEl.hidden = false;
-    setStatus(`${NAMES[state.turn]}: choose a piece to promote to`);
-  }
-
-  function playMove(m) {
-    state = m.next;
-    lastMove = m;
-    selected = null;
-    legal = legalMoves(state);
-    const key = positionKey(state);
-    positions[key] = (positions[key] || 0) + 1;
-
-    const mover = NAMES[other(state.turn)];
-    if (!legal.length && inCheck(state)) endGame(`Checkmate! ${winnerName(other(state.turn))} wins!`);
-    else if (!legal.length) endGame('Stalemate. It\'s a draw.');
-    else if (positions[key] >= 3) endGame('Draw by threefold repetition.');
-    else if (state.half >= 100) endGame('Draw by the 50-move rule.');
-    else if (insufficientMaterial(state.b)) endGame('Draw: not enough pieces left to checkmate.');
-    else if (vsCpu && state.turn === 'b') {
-      setStatus(`Computer is thinking…`);
-      cpuTimer = setTimeout(() => playMove(chooseCpuMove()), 50); // short pause so the status can redraw
+    // Compare against paying only the required amount.
+    if (extra > 0) {
+      const baseInterest = sum(amortize(principal, monthlyRate, payment, 0), 'interest');
+      $('savings').textContent = `Paying ${money(extra)} extra each month saves ${money(baseInterest - totalInterest)} ` +
+        `in interest and pays the loan off ${formatMonths(months - rows.length) || 'no'} sooner.`;
     } else {
-      showTurn();
+      $('savings').textContent = '';
     }
-    render();
+
+    // Running total of interest paid so far, shown alongside each month.
+    let interestSoFar = 0;
+    $('schedule').innerHTML = rows.map(r => {
+      interestSoFar += r.interest;
+      return `<tr><td>${r.month}</td><td>${money(r.payment)}</td><td>${money(r.principal)}</td>` +
+        `<td>${money(r.interest)}</td><td>${money(interestSoFar)}</td><td>${money(Math.max(r.balance, 0))}</td></tr>`;
+    }).join('');
+    $('totals').innerHTML = `<tr><td>Total</td><td>${money(sum(rows, 'payment'))}</td><td>${money(sum(rows, 'principal'))}</td>` +
+      `<td>${money(totalInterest)}</td><td></td><td></td></tr>`;
+    $('results').hidden = false;
   }
 
-  function winnerName(color) {
-    return vsCpu ? (color === 'w' ? 'You' : 'Computer') : NAMES[color];
-  }
-
-  function endGame(message) {
-    gameOver = true;
-    setStatus(message);
-  }
-
-  // The player whose turn it is gives up; the other player wins.
-  // Against the computer, the human (White) is always the one resigning.
-  function resign() {
-    if (gameOver) return;
-    const loser = vsCpu ? 'w' : state.turn;
-    if (!confirm(`${NAMES[loser]}, are you sure you want to resign?`)) return;
-    clearTimeout(cpuTimer); // cancel the computer's pending move, if any
-    promoEl.hidden = true;
-    selected = null;
-    endGame(`${NAMES[loser]} resigned. ${winnerName(other(loser))} win${vsCpu ? '' : 's'}!`);
-    render();
-  }
-
-  // ---------- Helpers & setup ----------
-
-  function render() {
-    const targets = selected === null ? [] : legal.filter(m => m.from === selected).map(m => m.to);
-    const checkedKing = inCheck(state) ? state.b.indexOf(state.turn + 'K') : -1;
-    cells.forEach((cell, sq) => {
-      const r = sq >> 3, c = sq & 7, p = state.b[sq];
-      const classes = ['sq', (r + c) % 2 ? 'dark' : 'light'];
-      if (lastMove && (sq === lastMove.from || sq === lastMove.to)) classes.push('last');
-      if (sq === selected) classes.push('selected');
-      if (sq === checkedKing) classes.push('check');
-      if (targets.includes(sq)) classes.push(p ? 'capture' : 'target');
-      cell.className = classes.join(' ');
-      cell.setAttribute('aria-label', squareName(sq) + (p ? ` ${NAMES[p[0]]} ${p[1]}` : ''));
-      cell.innerHTML = (p ? `<span class="piece ${p[0]}">${GLYPHS[p[1]]}&#xFE0E;</span>` : '') +
-        (c === 0 ? `<span class="coord rank">${8 - r}</span>` : '') +
-        (r === 7 ? `<span class="coord file">${FILES[c]}</span>` : '');
-    });
-  }
-
-  function setStatus(text) { statusEl.textContent = text; updateResign(); }
-  function updateResign() { document.getElementById('resign').disabled = gameOver; }
-
-  function showTurn() {
-    const name = vsCpu ? 'Your' : `${NAMES[state.turn]}'s`;
-    setStatus(`${name} turn${inCheck(state) ? ' — check!' : ''}`);
-  }
-
-  function newGame() {
-    clearTimeout(cpuTimer);
-    state = startPosition();
-    legal = legalMoves(state);
-    selected = null;
-    lastMove = null;
-    gameOver = false;
-    positions = { [positionKey(state)]: 1 };
-    promoEl.hidden = true;
-    showTurn();
-    render();
-  }
-
-  function selectButton(group, btn) {
-    group.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === btn));
-  }
-
-  const modeEl = document.getElementById('mode');
-  const difficultyEl = document.getElementById('difficulty');
-  modeEl.querySelectorAll('button').forEach(btn => btn.onclick = () => {
-    vsCpu = btn.dataset.cpu === 'true';
-    selectButton(modeEl, btn);
-    difficultyEl.hidden = !vsCpu;
-    newGame();
-  });
-  difficultyEl.querySelectorAll('button').forEach(btn => btn.onclick = () => {
-    level = btn.dataset.level;
-    selectButton(difficultyEl, btn);
-    newGame();
-  });
-
-  newGame();
+  $('form').onsubmit = e => { e.preventDefault(); calculate(); };
+  calculate();
 </script>
 </body>
 </html>
