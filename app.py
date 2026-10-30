@@ -5,13 +5,24 @@ import sys
 from datetime import date, datetime, time, timedelta
 
 import psycopg
+from dotenv import load_dotenv
 from flask import Flask, flash, g, redirect, render_template, request, session, url_for
 from psycopg.rows import dict_row
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    sys.exit("DATABASE_URL is not set. Set it to a PostgreSQL connection string, e.g. "
-             "postgresql://user:password@host/dbname")
+# Load settings from a local .env file, if present. Real environment variables win.
+load_dotenv()
+
+REQUIRED_SETTINGS = {
+    "DATABASE_URL": "the PostgreSQL connection string, e.g. postgresql://user:password@host/dbname",
+    "SECRET_KEY": "a long random string used to sign the session cookie",
+    "ADMIN_USERNAME": "the username of the administrator",
+}
+for name, purpose in REQUIRED_SETTINGS.items():
+    if not os.environ.get(name):
+        sys.exit(f"{name} is not set. Set it to {purpose}.")
+
+DATABASE_URL = os.environ["DATABASE_URL"]
+ADMIN_USERNAME = os.environ["ADMIN_USERNAME"]
 PBKDF2_ITERATIONS = 600_000
 
 # Office hours: Monday-Friday, 2:00-4:00 pm, in half-hour slots.
@@ -20,8 +31,10 @@ SLOT_LENGTH = timedelta(minutes=30)
 
 app = Flask(__name__)
 
-# Set SECRET_KEY in the environment for anything beyond local development.
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or os.urandom(32)
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
+# Cloud Run sets K_SERVICE in every container and serves only over HTTPS, so the
+# session cookie can be marked Secure there. Locally the app runs over plain HTTP.
+app.config["SESSION_COOKIE_SECURE"] = "K_SERVICE" in os.environ
 
 
 def get_db():
@@ -64,13 +77,13 @@ def hash_password(password, salt):
 
 
 def current_user():
-    """The logged-in user, with is_admin set for the first user who registered."""
+    """The logged-in user, with is_admin set for the user named by ADMIN_USERNAME."""
     username = session.get("username")
     if username is None:
         return None
     user = get_db().execute(
-        "SELECT id, username, id = (SELECT MIN(id) FROM users) AS is_admin FROM users WHERE username = %s",
-        (username,),
+        "SELECT id, username, username = %s AS is_admin FROM users WHERE username = %s",
+        (ADMIN_USERNAME, username),
     ).fetchone()
     if user is None:
         session.clear()
