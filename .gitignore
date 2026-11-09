@@ -1,0 +1,17 @@
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local database
+signup.db
+
+# Environment / editor
+.env
+.vscode/
+.idea/
+
+# Tests
+.pytest_cache/
