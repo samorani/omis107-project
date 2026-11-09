@@ -68,7 +68,7 @@ def main():
         check("cancelling own booking succeeds", "cancelled" in page)
 
         page = client.post("/cancel", data={"slot": slot}, follow_redirects=True).get_data(as_text=True)
-        check("cancelling an empty slot is refused", "don't have a booking" in page)
+        check("cancelling an empty slot is refused", "no booking in that slot" in page or "don't have a booking" in page)
 
         resp = client.post("/logout")
         check("logout redirects home", resp.status_code == 302)

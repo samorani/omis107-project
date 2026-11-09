@@ -39,6 +39,12 @@
                     {% endif %}
                   {% elif b %}
                     <span class="status">{% if user.is_admin %}{{ b.username }}{% else %}Taken{% endif %}</span>
+                    {% if user.is_admin and not slot.past %}
+                      <form method="post" action="{{ url_for('cancel') }}">
+                        <input type="hidden" name="slot" value="{{ slot.key }}">
+                        <button class="btn btn-small btn-ghost" type="submit">Cancel</button>
+                      </form>
+                    {% endif %}
                   {% elif slot.past %}
                     <span class="status">—</span>
                   {% else %}

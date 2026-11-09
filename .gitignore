@@ -12,3 +12,6 @@ signup.db
 .env
 .vscode/
 .idea/
+
+# Tests
+.pytest_cache/

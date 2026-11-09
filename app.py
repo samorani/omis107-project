@@ -24,6 +24,7 @@ for name, purpose in REQUIRED_SETTINGS.items():
 DATABASE_URL = os.environ["DATABASE_URL"]
 ADMIN_USERNAME = os.environ["ADMIN_USERNAME"]
 PBKDF2_ITERATIONS = 600_000
+MIN_PASSWORD_LENGTH = 8
 
 # Office hours: Monday-Friday, 2:00-4:00 pm, in half-hour slots.
 SLOT_TIMES = [time(14, 0), time(14, 30), time(15, 0), time(15, 30)]
@@ -113,7 +114,7 @@ def week_url(start):
 def index():
     user = current_user()
     if user is None:
-        return render_template("index.html", user=None)
+        return redirect(url_for("login"))
 
     try:
         monday = week_start(date.fromisoformat(request.args["week"]))
@@ -202,13 +203,21 @@ def cancel():
         return redirect(week_url(start))
 
     db = get_db()
-    deleted = db.execute(
-        "DELETE FROM bookings WHERE slot_start = %s AND user_id = %s",
-        (start.isoformat(), user["id"]),
-    ).rowcount
+    if user["is_admin"]:
+        # The administrator may cancel any booking.
+        deleted = db.execute(
+            "DELETE FROM bookings WHERE slot_start = %s", (start.isoformat(),)
+        ).rowcount
+    else:
+        deleted = db.execute(
+            "DELETE FROM bookings WHERE slot_start = %s AND user_id = %s",
+            (start.isoformat(), user["id"]),
+        ).rowcount
     db.commit()
     if deleted:
-        flash("Your booking was cancelled.")
+        flash("The booking was cancelled." if user["is_admin"] else "Your booking was cancelled.")
+    elif user["is_admin"]:
+        flash("There is no booking in that slot.", "error")
     else:
         flash("You don't have a booking in that slot.", "error")
     return redirect(week_url(start))
@@ -221,6 +230,9 @@ def register():
         password = request.form.get("password", "")
         if not username or not password:
             flash("Username and password are required.", "error")
+            return render_template("register.html", username=username)
+        if len(password) < MIN_PASSWORD_LENGTH:
+            flash(f"Password must be at least {MIN_PASSWORD_LENGTH} characters.", "error")
             return render_template("register.html", username=username)
 
         salt = os.urandom(16)
