@@ -24,7 +24,7 @@ for name, purpose in REQUIRED_SETTINGS.items():
 DATABASE_URL = os.environ["DATABASE_URL"]
 ADMIN_USERNAME = os.environ["ADMIN_USERNAME"]
 PBKDF2_ITERATIONS = 600_000
-MIN_PASSWORD_LENGTH = 8
+MIN_PASSWORD_LENGTH = 3
 
 # Office hours: Monday-Friday, 2:00-4:00 pm, in half-hour slots.
 SLOT_TIMES = [time(14, 0), time(14, 30), time(15, 0), time(15, 30)]
