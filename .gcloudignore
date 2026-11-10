@@ -1,0 +1,27 @@
+# Files that "gcloud run deploy --source ." must NOT upload to Cloud Run.
+# (With this file present, gcloud no longer derives the list from .gitignore,
+# so the .gitignore entries that matter are repeated here.)
+
+# Credentials: the local settings file and the temporary key that the
+# google-github-actions/auth step writes into the runner's checkout.
+.env
+gha-creds-*.json
+*.json
+
+# Not needed by the running app
+.git/
+.gitignore
+.gcloudignore
+.github/
+tests/
+smoke_test.py
+gcp_setup.sh
+README.md
+
+# Python / editor clutter
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.vscode/
+.idea/
