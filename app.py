@@ -12,6 +12,7 @@ from psycopg.rows import dict_row
 # Load settings from a local .env file, if present. Real environment variables win.
 load_dotenv()
 
+
 REQUIRED_SETTINGS = {
     "DATABASE_URL": "the PostgreSQL connection string, e.g. postgresql://user:password@host/dbname",
     "SECRET_KEY": "a long random string used to sign the session cookie",
