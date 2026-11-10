@@ -1,10 +1,17 @@
-# Runs the pytest suite on every pull request and every push to main.
+# Runs the pytest suite on every pull request and every push to main. When main
+# changes (a merged pull request or a direct push) and the tests pass, deploys
+# signup-messi to Cloud Run.
 #
-# The job starts its own throwaway PostgreSQL server as a service container and
-# points TEST_DATABASE_URL at it. No Neon connection string is used or needed:
+# The test job starts its own throwaway PostgreSQL server as a service container
+# and points TEST_DATABASE_URL at it. No Neon connection string is used or needed:
 # DATABASE_URL is deliberately left unset, and the tests refuse to run if it ever
-# equalled TEST_DATABASE_URL. This workflow never deploys anything.
-name: Tests
+# equalled TEST_DATABASE_URL.
+#
+# The deploy job signs in with the service-account key held in the repository
+# secret GCP_CREDENTIALS. The key lives only in that secret: it is never in the
+# repository, and .gcloudignore keeps the runner's temporary credentials file out
+# of the source upload.
+name: Tests and deploy
 
 on:
   pull_request:
@@ -49,3 +56,34 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests -v
+
+  deploy:
+    # Only after the tests pass, and only when main changes: a merged pull
+    # request or a direct push. Opening or updating a PR never deploys.
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    env:
+      PROJECT_ID: office-hours-michele-62
+      SERVICE: signup-messi
+      REGION: us-west1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sign in to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: >-
+          gcloud run deploy "$SERVICE"
+          --source .
+          --project "$PROJECT_ID"
+          --region "$REGION"
+          --allow-unauthenticated
+          --quiet
